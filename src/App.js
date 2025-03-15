@@ -1,19 +1,51 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-require('dotenv').config();
+document.addEventListener('DOMContentLoaded', function() {
+  const studentForm = document.getElementById('student-form');
+  const studentsList = document.getElementById('students');
 
-const app = express();
-const port = process.env.PORT || 3000;
+  // Function to fetch students from the server
+  function fetchStudents() {
+      fetch('http://localhost:3000/students')
+          .then(response => response.json())
+          .then(students => {
+              studentsList.innerHTML = '';
+              students.forEach(student => {
+                  const li = document.createElement('li');
+                  li.textContent = `Name: ${student.name}, Email: ${student.email}, Age: ${student.age}`;
+                  studentsList.appendChild(li);
+              });
+          })
+          .catch(err => console.error('Error fetching students:', err));
+  }
 
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-const db = mongoose.connection;
-db.on('error', (error) => console.error(error));
-db.once('open', () => console.log('Connected to Database'));
+  // Handle form submission
+  studentForm.addEventListener('submit', function(event) {
+      event.preventDefault();
 
-app.use(bodyParser.json());
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const age = document.getElementById('age').value;
 
-const studentsRouter = require('./routes/students');
-app.use('/students', studentsRouter);
+      const studentData = {
+          name,
+          email,
+          age
+      };
 
-module.exports = app;
+      fetch('http://localhost:3000/students', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(studentData)
+      })
+      .then(response => response.json())
+      .then(data => {
+          fetchStudents(); // Refresh the student list after adding a new student
+          studentForm.reset(); // Reset the form
+      })
+      .catch(error => console.error('Error adding student:', error));
+  });
+
+  // Initial fetch of students
+  fetchStudents();
+});
